@@ -7,89 +7,176 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
             padding: 0;
-            background-color: #f4f4f9;
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
+            background-color: #f8f9fa;
         }
 
         .container {
             max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
+            margin: 50px auto;
+            background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
         }
 
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        h1 {
+            color: #00796b;
         }
 
         input[type="file"] {
-            padding: 5px;
-            font-size: 16px;
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
 
         button {
-            padding: 10px 20px;
-            background-color: #007bff;
+            background-color: #00796b;
+            color: #ffffff;
             border: none;
-            color: white;
-            font-size: 16px;
+            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 16px;
         }
 
         button:hover {
-            background-color: #0056b3;
+            background-color: #00574b;
         }
 
         .result {
+            margin-top: 30px;
+        }
+
+        .result-box {
+            border: 1px solid #00796b;
+            padding: 15px;
+            border-radius: 6px;
+            background-color: #e8f5e9;
+            text-align: left;
+        }
+
+        .recommendations {
             margin-top: 20px;
+            text-align: left;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            background-color: #c8e6c9;
+            margin: 5px 0;
             padding: 10px;
-            background-color: #e7f5ff;
-            border: 1px solid #bbe3f9;
             border-radius: 4px;
         }
 
-        .result.error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c2c7;
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Prediksi Bahasa Isyarat</h1>
     <div class="container">
-        <h2>Unggah Gambar Anda</h2>
-        <form action="/predict" method="post" enctype="multipart/form-data">
-            <label for="file">Pilih gambar:</label>
-            <input type="file" name="file" id="file" required>
-            <button type="submit">Prediksi</button>
+        <h1>Prediksi Bahasa Isyarat</h1>
+        <p>Unggah gambar anda</p>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" id="fileInput" name="file" accept="image/*">
+            <br>
+            <button type="button" id="predictButton">Prediksi</button>
         </form>
 
-        <!-- Pesan Error -->
-        {% if error %}
-        <div class="result error">
-            <p>{{ error }}</p>
-        </div>
-        {% endif %}
-
-        <!-- Hasil Prediksi -->
-        {% if result %}
-        <div class="result">
+        <!-- Kontainer hasil -->
+        <div id="resultContainer" class="result" style="display: none;">
             <h2>Hasil Prediksi</h2>
-            <p><strong>Kelas:</strong> {{ result.predicted_class }}</p>
-            <p><strong>Probabilitas:</strong> {{ result.probability }}</p>
+            <div class="result-box">
+                <p><strong>Prediksi:</strong> <span id="predictedClass">-</span></p>
+                <p><strong>Probabilitas:</strong> <span id="probability">-</span>%</p>
+            </div>
+
+            <button type="button" id="resetButton">Reset</button>
         </div>
-        {% endif %}
     </div>
+
+    <script>
+        const fileInput = document.getElementById("fileInput");
+        const predictButton = document.getElementById("predictButton");
+        const resultContainer = document.getElementById("resultContainer");
+        const predictedClassSpan = document.getElementById("predictedClass");
+        const probabilitySpan = document.getElementById("probability");
+        const recommendationList = document.getElementById("recommendationList");
+        const uploadedImage = document.getElementById("uploadedImage");
+        const resetButton = document.getElementById("resetButton");
+
+        predictButton.addEventListener("click", () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Silakan pilih file gambar terlebih dahulu.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            fetch("/predict", {
+                method: "POST",
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    // Tampilkan hasil prediksi
+                    predictedClassSpan.textContent = data.predicted_class;
+                    probabilitySpan.textContent = (data.probability * 100).toFixed(2);
+
+                    // Tampilkan rekomendasi tanaman
+                    recommendationList.innerHTML = ""; // Hapus rekomendasi lama
+                    data.recommendations.forEach(plant => {
+                        const listItem = document.createElement("li");
+                        listItem.textContent = plant;
+                        recommendationList.appendChild(listItem);
+                    });
+
+                    // Tampilkan gambar yang diunggah
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        uploadedImage.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+
+                    // Tampilkan kontainer hasil
+                    resultContainer.style.display = "block";
+                })
+                .catch(error => console.error("Error:", error));
+        });
+
+        resetButton.addEventListener("click", () => {
+            // Reset formulir
+            fileInput.value = "";
+            resultContainer.style.display = "none"; // Sembunyikan kontainer hasil
+            predictedClassSpan.textContent = "-";
+            probabilitySpan.textContent = "-";
+            recommendationList.innerHTML = ""; // Kosongkan daftar rekomendasi
+            uploadedImage.src = "#"; // Reset gambar unggah
+
+            // Scroll kembali ke atas
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+        });
+    </script>
 </body>
 </html>
