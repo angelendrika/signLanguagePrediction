@@ -112,7 +112,6 @@
         const resultContainer = document.getElementById("resultContainer");
         const predictedClassSpan = document.getElementById("predictedClass");
         const probabilitySpan = document.getElementById("probability");
-        const recommendationList = document.getElementById("recommendationList");
         const uploadedImage = document.getElementById("uploadedImage");
         const resetButton = document.getElementById("resetButton");
 
@@ -141,13 +140,6 @@
                     predictedClassSpan.textContent = data.predicted_class;
                     probabilitySpan.textContent = (data.probability * 100).toFixed(2);
 
-                    // Tampilkan rekomendasi tanaman
-                    recommendationList.innerHTML = ""; // Hapus rekomendasi lama
-                    data.recommendations.forEach(plant => {
-                        const listItem = document.createElement("li");
-                        listItem.textContent = plant;
-                        recommendationList.appendChild(listItem);
-                    });
 
                     // Tampilkan gambar yang diunggah
                     const reader = new FileReader();
@@ -168,7 +160,6 @@
             resultContainer.style.display = "none"; // Sembunyikan kontainer hasil
             predictedClassSpan.textContent = "-";
             probabilitySpan.textContent = "-";
-            recommendationList.innerHTML = ""; // Kosongkan daftar rekomendasi
             uploadedImage.src = "#"; // Reset gambar unggah
 
             // Scroll kembali ke atas
